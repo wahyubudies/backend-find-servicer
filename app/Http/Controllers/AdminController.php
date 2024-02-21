@@ -17,6 +17,7 @@ class AdminController extends Controller
 
         if ($merchant->is_suspended == 1) {
             $merchant->is_suspended = 0;
+            $merchant->penalty_count = 0;
             $merchant->save();
             return ApiResponse::success([], 'Merchant Was Successfully Unsuspended', 200);
         } else {

@@ -66,9 +66,17 @@ class UserController extends Controller
             'gender' => $request->gender,
             'phone_number' => $request->phone_number,
             'address' => $request->address,
-            'photo' => "/storage/" . $photoPath,
+            'photo' => $this->getPhoto($photoPath),
             'role' => 2
         ]);
         return ApiResponse::success($user, 'User registered successfully', 201);
+    }
+
+    public function getPhoto( $photoPath)
+    {
+        if($photoPath == "" || !isset($photoPath)){
+            return "";
+        }
+        return "/storage/" . $photoPath;
     }
 }

@@ -25,7 +25,7 @@ class MerchantController extends Controller
             });
         }
         
-        if(!is_null($searchValue)){            
+        if(!is_null($searchValue)){
             $query->where('name', 'like', $searchValue)
                 ->orWhereHas('merchant', function ($query) use ($searchValue) {
                     $query->where('service_name', 'like', $searchValue);
@@ -121,7 +121,7 @@ class MerchantController extends Controller
             'gender' => $request->gender,
             'phone_number' => $request->phone_number,
             'address' => $request->address,
-            'photo' => "/storage/" . $photoPath,
+            'photo' => $this->getPhoto($photoPath),
             'role' => 3
         ]);
 
@@ -146,6 +146,14 @@ class MerchantController extends Controller
             'price_per_hour' => $merchant->price_per_hour
         ];
         return ApiResponse::success($result, 'Merchant registered successfully', 201);
+    }
+
+    public function getPhoto( $photoPath)
+    {
+        if($photoPath == "" || !isset($photoPath)){
+            return "";
+        }
+        return "/storage/" . $photoPath;
     }
 
     public function acceptOrder(Request $request, $id)

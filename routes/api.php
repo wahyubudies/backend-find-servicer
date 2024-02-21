@@ -41,7 +41,10 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::prefix('order')->group(function () {
+        Route::post('/histories', [OrderController::class, 'orderHistories'])->name('order.histories');
+        Route::get('/{id}', [OrderController::class, 'show'])->name('order.show');
         Route::post('/book', [OrderController::class, 'bookService'])->name('order.book');
         Route::put('/{id}/accept', [OrderController::class, 'acceptOrder'])->name('order.accept');
+        Route::put('/{id}/cancel', [OrderController::class, 'cancelOrder'])->name('order.cancel');
     });
 });

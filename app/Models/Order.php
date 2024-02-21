@@ -10,7 +10,11 @@ class Order extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id', 'merchant_id', 'order_time', 'status',
+        'user_id', 'merchant_id', 'expiration_date', 'status',
+    ];
+
+    protected $casts = [
+        'expiration_date' => 'datetime',
     ];
 
     public function user()

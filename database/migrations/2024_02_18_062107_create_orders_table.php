@@ -17,7 +17,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('merchant_id')->constrained()->onDelete('cascade');
-            $table->dateTime('order_time');
+            $table->dateTime('expiration_date');
             $table->tinyInteger('status')->default(0);
             $table->timestamps();
         });
