@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Models\Order;
+use Illuminate\Support\Facades\Log;
 
 class CheckOrdersExpiration extends Command
 {
@@ -54,7 +55,7 @@ class CheckOrdersExpiration extends Command
             }
         }
 
-        $this->info('Orders expiration checked successfully.');
+        Log::info('Orders expiration checked successfully.' . now());
     }
 
 

@@ -1,1 +1,0 @@
-#!/bin/sh/usr/bin/php /home/u726778222/domains/farid1.online/public_html/apk-service/artisan schedule:run
