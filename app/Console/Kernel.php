@@ -23,6 +23,9 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         $schedule->command('check:orders-expiration')->everyMinute();
+        $schedule->call(function () {
+            Log::info('Cronjob berhasil dijalankan');
+        })->everyMinute();
     }
 
     /**
