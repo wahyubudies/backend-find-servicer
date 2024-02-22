@@ -55,7 +55,6 @@ class CheckOrdersExpiration extends Command
         }
 
         $this->info('Orders expiration checked successfully.');
-        \Log::info("Cron job Berhasil di jalankan " . date('Y-m-d H:i:s'));
     }
 
 
