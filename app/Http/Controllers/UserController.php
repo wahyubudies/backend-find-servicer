@@ -101,6 +101,7 @@ class UserController extends Controller
         $otp = $request->otp;
         $userOtp = Session::get('user_otp');
         $userData = Session::get('user_registration_data');
+        Session::save();
         dd($userData);
         if ($otp != $userOtp) {
             // OTP is incorrect
@@ -137,6 +138,7 @@ class UserController extends Controller
     {
         Session::forget('user_registration_data');
         Session::forget('user_otp');
+        Session::save();
     }
 
     public function getPhoto( $photoPath)
