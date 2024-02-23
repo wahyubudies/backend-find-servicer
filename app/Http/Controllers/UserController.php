@@ -101,6 +101,7 @@ class UserController extends Controller
         $userOtp = $request->session()->get('user_otp');
         $userData = $request->session()->get('user_registration_data');
 
+        dd($userData);
         if ($otp != $userOtp) {
             // OTP is incorrect
             return ApiResponse::error('Invalid OTP', 400);
