@@ -22,13 +22,13 @@ Route::get('/', function () {
     return 'welcome to service';
 });
 
-Route::middleware('web')->prefix('user')->group(function () {
+Route::prefix('user')->group(function () {
     Route::post('/login', [UserController::class, 'login'])->name('user.login');
     Route::post('/register', [UserController::class, 'register'])->name('user.register');
     Route::post('/register/verify',[UserController::class, 'verifyRegister'])->name('user.verify.register');
 });
 
-Route::middleware('web')->prefix('merchant')->group(function () {
+Route::prefix('merchant')->group(function () {
     Route::post('/login', [MerchantController::class, 'login'])->name('merchant.login');
     Route::post('/register', [MerchantController::class, 'register'])->name('merchant.register');
     Route::post('/register/verify',[MerchantController::class, 'verifyRegister'])->name('merchant.verify.register');

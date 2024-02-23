@@ -11,6 +11,7 @@ use App\Helpers\ApiResponse;
 use Illuminate\Support\Str;
 use App\Mail\OtpRegisterMail;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Session;
 
 class UserController extends Controller
 {
@@ -71,8 +72,8 @@ class UserController extends Controller
         $this->sendOtpEmail($request->email, $otp);
 
         // Store user data and OTP in session
-        $request->session()->put('user_registration_data', $data);
-        $request->session()->put('user_otp', $otp);
+        Session::put('user_registration_data', $data);
+        Session::put('user_otp', $otp);
         // $request->session()->put('user_otp_expired', now()->addMinutes(5));
 
         return ApiResponse::success([], 'OTP sent to email for verification', 200);
@@ -98,15 +99,15 @@ class UserController extends Controller
     public function verifyRegister(Request $request)
     {
         $otp = $request->otp;
-        $userOtp = $request->session()->get('user_otp');
-        $userData = $request->session()->get('user_registration_data');
+        $userOtp = Session::get('user_otp');
+        $userData = Session::get('user_registration_data');
         dd($request->session());
         if ($otp != $userOtp) {
             // OTP is incorrect
             return ApiResponse::error('Invalid OTP', 400);
         }
 
-        // $otpExpiredTime = $request->session()->get('user_otp_expired');
+        // $otpExpiredTime = Session::get('user_otp_expired');
         // $currentDateTime = now();
 
         // if ($currentDateTime > $otpExpiredTime) {
@@ -134,8 +135,8 @@ class UserController extends Controller
 
     private function forgetSession($request)
     {
-        $request->session()->forget('user_registration_data');
-        $request->session()->forget('user_otp');
+        Session::forget('user_registration_data');
+        Session::forget('user_otp');
     }
 
     public function getPhoto( $photoPath)
