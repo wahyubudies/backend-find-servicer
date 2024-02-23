@@ -33,7 +33,7 @@ class OrderController extends Controller
         $order = Order::create([
             'user_id' => $user_id,
             'merchant_id' => $merchant_id,
-            'expiration_date' => now()->addMinutes(5),
+            'expiration_date' => now()->addMinutes(60),
             'status' => 0
         ]);
 

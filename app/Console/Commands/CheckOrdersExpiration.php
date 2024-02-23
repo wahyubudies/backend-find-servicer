@@ -53,8 +53,7 @@ class CheckOrdersExpiration extends Command
                     $merchant->update(['is_suspended' => 1]);
                 }
             }
-        }
-
+        }        
         Log::info('Orders expiration checked successfully.' . now());
     }
 

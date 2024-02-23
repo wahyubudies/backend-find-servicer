@@ -22,7 +22,7 @@ class Kernel extends ConsoleKernel
 
     protected function schedule(Schedule $schedule)
     {
-        $schedule->command('check:orders-expiration');
+        $schedule->command('check:orders-expiration')->everyFiveMinutes();
     }
 
     /**
