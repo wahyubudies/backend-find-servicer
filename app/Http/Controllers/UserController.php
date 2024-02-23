@@ -73,7 +73,7 @@ class UserController extends Controller
         // Store user data and OTP in session
         $request->session()->put('user_registration_data', $data);
         $request->session()->put('user_otp', $otp);
-        $request->session()->put('user_otp_expired', now()->addMinutes(5));
+        // $request->session()->put('user_otp_expired', now()->addMinutes(5));
 
         return ApiResponse::success([], 'OTP sent to email for verification', 200);
     }
@@ -100,8 +100,7 @@ class UserController extends Controller
         $otp = $request->otp;
         $userOtp = $request->session()->get('user_otp');
         $userData = $request->session()->get('user_registration_data');
-
-        dd($userData);
+        dd($request->session());
         if ($otp != $userOtp) {
             // OTP is incorrect
             return ApiResponse::error('Invalid OTP', 400);

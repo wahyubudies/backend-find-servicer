@@ -125,7 +125,7 @@ class MerchantController extends Controller
          // Store user data and OTP in session
         $request->session()->put('merchant_registration_data', $data);
         $request->session()->put('merchant_otp', $otp);
-        $request->session()->put('merchant_otp_expired', now()->addMinutes(5));
+        // $request->session()->put('merchant_otp_expired', now()->addMinutes(5));
 
         
         return ApiResponse::success([], 'Merchant registered successfully', 201);
