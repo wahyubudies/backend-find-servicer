@@ -10,6 +10,8 @@ use App\Models\User;
 use App\Models\Merchant;
 use App\Helpers\ApiResponse;
 use App\Helpers\PaginationHelper;
+use App\Mail\OtpRegisterMail;
+use Illuminate\Support\Facades\Mail;
 
 class MerchantController extends Controller
 {
@@ -31,8 +33,6 @@ class MerchantController extends Controller
                     $query->where('service_name', 'like', $searchValue);
                 });
         }
-
-        // dd($query->toSql(), $query->getBindings());
 
         $perPage = $request->input('per_page', 10);
         $merchants = $query->paginate($perPage);
@@ -113,23 +113,61 @@ class MerchantController extends Controller
             $photo = $request->file('photo');
             $photoPath = $photo->store('profile', 'public');
         }
+        $data = $request->all();
+        $data['photo'] = $photoPath;
 
+        // Generate OTP
+        $otp = $this->generateNumericString(6);
+
+         // Send OTP via email
+        $this->sendOtpEmail($request->email, $otp);
+
+         // Store user data and OTP in session
+        $request->session()->put('merchant_registration_data', $data);
+        $request->session()->put('merchant_otp', $otp);
+        $request->session()->put('merchant_otp_expired', now()->addMinutes(5));
+
+        
+        return ApiResponse::success([], 'Merchant registered successfully', 201);
+    }
+
+    public function verifyRegister(Request $request)
+    {
+        $otp = $request->otp;
+        $merchantOtp = $request->session()->get('merchant_otp');
+        $merchantData = $request->session()->get('merchant_registration_data');
+
+        if ($otp != $merchantOtp){
+            // OTP is incorrect
+            return ApiResponse::error('Invalid OTP', 400);
+        }
+
+        // $otpExpiredTime = $request->session()->get('merchant_otp_expired');
+        // $currentDateTime = now();
+
+        // if ($currentDateTime > $otpExpiredTime) {
+        //     $this->forgetSession();
+        //     // OTP expired
+        //     return ApiResponse::error('OTP expired', 400);
+        // }
+
+        // Store user data in database
         $user = User::create([
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'name' => $request->name,
-            'gender' => $request->gender,
-            'phone_number' => $request->phone_number,
-            'address' => $request->address,
-            'photo' => $this->getPhoto($photoPath),
+            'email' => $merchantData->email,
+            'password' => Hash::make($merchantData->password),
+            'name' => $merchantData->name,
+            'gender' => $merchantData->gender,
+            'phone_number' => $merchantData->phone_number,
+            'address' => $merchantData->address,
+            'photo' => $merchantData->photo,
             'role' => 3
         ]);
 
         $merchant = Merchant::create([
             'user_id' => $user->id,
-            'description' => $request->description,
-            'service_name' => $request->service_name,
-            'price_per_hour' => $request->price_per_hour
+            'description' => $merchantData->description,
+            'service_name' => $merchantData->service_name,
+            'price_per_hour' => $merchantData->price_per_hour
         ]);
         
         $result = [
@@ -145,7 +183,22 @@ class MerchantController extends Controller
             'service_name' => $merchant->service_name,
             'price_per_hour' => $merchant->price_per_hour
         ];
-        return ApiResponse::success($result, 'Merchant registered successfully', 201);
+
+        // Clear session data
+        $this->forgetSession();
+        return ApiResponse::success($result, 'User registered successfully', 201);        
+    }
+
+    private function forgetSession(Request $request)
+    {
+        $request->session()->forget('merchant_registration_data');
+        $request->session()->forget('merchant_otp');
+    }
+
+    // Function to send OTP via email
+    public function sendOtpEmail($email, $otp)
+    {
+        Mail::to($email)->send(new OtpRegisterMail($otp));
     }
 
     public function getPhoto( $photoPath)
@@ -154,6 +207,17 @@ class MerchantController extends Controller
             return "";
         }
         return "/storage/" . $photoPath;
+    }
+
+    public static function generateNumericString($length)
+    {
+        $otp = '';
+
+        for ($i = 0; $i < $length; $i++) {
+            $otp .= mt_rand(0, 9); // Generate a random number between 0 and 9
+        }
+
+        return $otp;
     }
 
     public function acceptOrder(Request $request, $id)

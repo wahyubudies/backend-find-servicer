@@ -112,7 +112,8 @@ class OrderController extends Controller
                 'expiration_date' => $order->expiration_date->format('Y-m-d H:i:s'),
                 'status' => $order->status,
                 'order_date' => $order->created_at->format('Y-m-d H:i:s'),
-                'merchant' => $this->formatMerchant($order->merchant)
+                'merchant' => $this->formatMerchant($order->merchant),
+                'user' => $this->formarUser($order->user)
             ];
         });
 
@@ -133,6 +134,21 @@ class OrderController extends Controller
             'penalty_count' => $merchant->penalty_count,
             'is_suspended' => $merchant->is_suspended,
             'join_date' => $merchant->created_at->format('Y-m-d H:i:s')
+        ];
+    }
+
+    public function formarUser ($user)
+    {
+        return [
+            "id" => $user->id,
+            "name" => $user->name,
+            "email" => $user->email,
+            "gender" => $user->gender,
+            "phone_number" => $user->phone_number,
+            "address" => $user->address,
+            "photo" => $user->photo,
+            "role" => $user->role,
+            "join_date" => $user->created_at->format('Y-m-d H:i:s')
         ];
     }
 

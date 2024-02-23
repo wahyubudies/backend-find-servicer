@@ -6,6 +6,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\MerchantController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\EmailController;
 
 /*
 |--------------------------------------------------------------------------
@@ -24,12 +25,16 @@ Route::get('/', function () {
 Route::prefix('user')->group(function () {
     Route::post('/login', [UserController::class, 'login'])->name('user.login');
     Route::post('/register', [UserController::class, 'register'])->name('user.register');
+    Route::post('/register/verify',[UserController::class, 'verifyRegister'])->name('user.verify.register');
 });
 
 Route::prefix('merchant')->group(function () {
     Route::post('/login', [MerchantController::class, 'login'])->name('merchant.login');
     Route::post('/register', [MerchantController::class, 'register'])->name('merchant.register');
+    Route::post('/register/verify',[MerchantController::class, 'verifyRegister'])->name('merchant.verify.register');
 });
+
+Route::get('/otp/register', [EmailController::class, 'sendOtpRegister'])->name('otp.register');
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('admin')->group(function () {
