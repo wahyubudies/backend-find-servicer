@@ -185,11 +185,11 @@ class MerchantController extends Controller
         ];
 
         // Clear session data
-        $this->forgetSession();
+        $this->forgetSession($request);
         return ApiResponse::success($result, 'User registered successfully', 201);        
     }
 
-    private function forgetSession(Request $request)
+    private function forgetSession($request)
     {
         $request->session()->forget('merchant_registration_data');
         $request->session()->forget('merchant_otp');

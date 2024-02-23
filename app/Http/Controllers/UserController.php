@@ -129,11 +129,11 @@ class UserController extends Controller
         ]);
 
         // Clear session data
-        $this->forgetSession();
+        $this->forgetSession($request);
         return ApiResponse::success($user, 'User registered successfully', 201);
     }
 
-    private function forgetSession(Request $request)
+    private function forgetSession($request)
     {
         $request->session()->forget('user_registration_data');
         $request->session()->forget('user_otp');
