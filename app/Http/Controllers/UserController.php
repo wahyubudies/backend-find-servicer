@@ -104,6 +104,7 @@ class UserController extends Controller
         $userOtp = $this->getOtpFromCookie();
         $userData = $this->getUserDataFromCookie();
 
+        dd($userData);
         if ($otp != $userOtp) {
             // OTP is incorrect
             return ApiResponse::error('Invalid OTP', 400);
