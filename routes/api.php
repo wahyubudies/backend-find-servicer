@@ -6,7 +6,6 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\MerchantController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\OrderController;
-use App\Http\Controllers\EmailController;
 
 /*
 |--------------------------------------------------------------------------
@@ -33,8 +32,6 @@ Route::prefix('merchant')->group(function () {
     Route::post('/register', [MerchantController::class, 'register'])->name('merchant.register');
     Route::post('/register/verify',[MerchantController::class, 'verifyRegister'])->name('merchant.verify.register');
 });
-
-Route::get('/otp/register', [EmailController::class, 'sendOtpRegister'])->name('otp.register');
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('admin')->group(function () {
