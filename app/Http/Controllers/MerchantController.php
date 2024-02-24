@@ -26,10 +26,10 @@ class MerchantController extends Controller
         $startDate = $request->input('start_date', null);
         $endDate = $request->input('end_date', null);
         $status = $request->input('status', null);
-        $user_id = auth()->user()->id;
+        $merchant_id = auth()->user()->id;
 
-        $query = Order::where('merchant_id', $user_id);
-        
+        $query = Order::query()->where('merchant_id', $merchant_id);
+        dd($query->get());
         if (!empty($startDate) && !empty($endDate) || !is_null($startDate) && !is_null($endDate)) {
             $query->whereDate('created_at', '>=', $startDate)
                 ->whereDate('created_at', '<=', $endDate);
