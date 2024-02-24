@@ -106,6 +106,8 @@ class OrderController extends Controller
             $query->where('status', $status);
         }
         
+        $query->orderBy('created_at', 'desc');
+
         $formattedOrders = $query->get()->map(function ($order) {
             return [
                 'id' => $order->id,
