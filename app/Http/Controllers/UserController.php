@@ -11,15 +11,16 @@ use App\Helpers\ApiResponse;
 use Illuminate\Support\Str;
 use App\Mail\OtpRegisterMail;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Cookie;
 
 class UserController extends Controller
 {
+    const COOKIE_USER_DATA = 'user_registration_data';
+    const COOKIE_USER_OTP = 'user_otp';
 
     public function login(Request $request)
     {
-
-        $validator = Validator::make($request->all(),[
+        // Validasi input
+        $validator = Validator::make($request->all(), [
             'email' => 'required|email',
             'password' => 'required',
         ]);
@@ -43,7 +44,7 @@ class UserController extends Controller
 
     public function register(Request $request)
     {
-
+        // Validasi input
         $validator = Validator::make($request->all(), [
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:6',
@@ -82,13 +83,7 @@ class UserController extends Controller
 
     public static function generateNumericString($length)
     {
-        $otp = '';
-
-        for ($i = 0; $i < $length; $i++) {
-            $otp .= mt_rand(0, 9); // Generate a random number between 0 and 9
-        }
-
-        return $otp;
+        return Str::random($length);
     }
 
     // Function to send OTP via email
@@ -99,12 +94,10 @@ class UserController extends Controller
 
     public function verifyRegister(Request $request)
     {
-
         $otp = $request->otp;
         $userOtp = $this->getOtpFromCookie();
         $userData = $this->getUserDataFromCookie();
 
-        dd($userData);
         if ($otp != $userOtp) {
             // OTP is incorrect
             return ApiResponse::error('Invalid OTP', 400);
@@ -129,35 +122,36 @@ class UserController extends Controller
 
     private function storeUserDataInCookie($data)
     {
-        $cookie = cookie(COOKIE_USER_DATA, json_encode($data), 60); // Expires in 60 minutes
-        response()->withCookie($cookie);
+        $cookie = cookie(self::COOKIE_USER_DATA, json_encode($data), 60); // Expires in 60 minutes
+        return response()->withCookie($cookie);
     }
 
     private function getUserDataFromCookie()
     {
-        return json_decode(request()->cookie(COOKIE_USER_DATA));
+        return json_decode(request()->cookie(self::COOKIE_USER_DATA), true);
     }
 
     private function storeOtpInCookie($otp)
     {
-        $cookie = cookie(COOKIE_USER_OTP, $otp, 5); // Expires in 5 minutes
-        response()->withCookie($cookie);
+        $cookie = cookie(self::COOKIE_USER_OTP, $otp, 5); // Expires in 5 minutes
+        return response()->withCookie($cookie);
     }
 
     private function getOtpFromCookie()
     {
-        return request()->cookie(COOKIE_USER_OTP);
+        return request()->cookie(self::COOKIE_USER_OTP);
     }
 
     private function clearCookies()
     {
-        request()->forgetCookie(COOKIE_USER_DATA);
-        request()->forgetCookie(COOKIE_USER_OTP);
+        return response()
+            ->withCookie(cookie()->forget(self::COOKIE_USER_DATA))
+            ->withCookie(cookie()->forget(self::COOKIE_USER_OTP));
     }
 
-    public function getPhoto( $photoPath)
+    public function getPhoto($photoPath)
     {
-        if($photoPath == "" || !isset($photoPath)){
+        if ($photoPath == "" || !isset($photoPath)) {
             return "";
         }
         return "/storage/" . $photoPath;
