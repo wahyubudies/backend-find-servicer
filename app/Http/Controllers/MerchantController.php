@@ -29,7 +29,7 @@ class MerchantController extends Controller
         $merchant_id = auth()->user()->id;
 
         $query = Order::query()->where('merchant_id', $merchant_id);
-        dd($query->get());
+        dd($query->get()->toSql());
         if (!empty($startDate) && !empty($endDate) || !is_null($startDate) && !is_null($endDate)) {
             $query->whereDate('created_at', '>=', $startDate)
                 ->whereDate('created_at', '<=', $endDate);
