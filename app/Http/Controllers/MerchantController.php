@@ -39,7 +39,7 @@ class MerchantController extends Controller
         }
         
         $query->orderBy('created_at', 'desc');
-        dd($query->get()->toRawSql());
+        dd($query->toSql());
         
         $formattedOrders = $query->get()->map(function ($order) {
             return [
