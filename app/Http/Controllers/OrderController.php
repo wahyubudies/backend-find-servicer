@@ -128,6 +128,13 @@ class OrderController extends Controller
     {
         return [
             'id'=>$merchant->id,
+            'name'=>$merchant->user->name,
+            'email'=>$merchant->user->email,
+            'gender'=>$merchant->user->gender,
+            'phone_number'=>$merchant->user->phone_number,
+            'address'=>$merchant->user->address,
+            'photo'=>$merchant->user->photo,
+            'role'=>$merchant->user->role,
             'service_name' => $merchant->service_name,
             'description' => $merchant->description,
             'price_per_hour' => $merchant->price_per_hour,
