@@ -14,17 +14,13 @@ use Illuminate\Support\Facades\Mail;
 
 class UserController extends Controller
 {
-    const COOKIE_USER_DATA = 'user_registration_data';
-    const COOKIE_USER_OTP = 'user_otp';
-
     public function login(Request $request)
     {
-        // Validasi input
-        $validator = Validator::make($request->all(), [
+        $validator = Validator::make($request->all(),[
             'email' => 'required|email',
             'password' => 'required',
         ]);
-
+    
         if ($validator->fails()) {
             return ApiResponse::error($validator->errors()->first(), 422);
         }
@@ -44,7 +40,6 @@ class UserController extends Controller
 
     public function register(Request $request)
     {
-        // Validasi input
         $validator = Validator::make($request->all(), [
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:6',
@@ -64,26 +59,32 @@ class UserController extends Controller
             $photo = $request->file('photo');
             $photoPath = $photo->store('profile', 'public');
         }
-
         $data = $request->all();
-        $data['photo'] = $photoPath;
-
+        $data['photo'] = $this->getPhoto($photoPath);
+                
         // Generate OTP
         $otp = $this->generateNumericString(6);
 
         // Send OTP via email
         $this->sendOtpEmail($request->email, $otp);
 
-        // Store user data in cookies
-        $this->storeUserDataInCookie($data);
-        $this->storeOtpInCookie($otp);
+        $result = [
+            'registered' => $data,
+            'otpEmail' => $otp
+        ];
 
-        return ApiResponse::success([], 'OTP sent to email for verification', 200);
+        return ApiResponse::success($result , 'OTP sent to email for verification', 200);
     }
 
     public static function generateNumericString($length)
     {
-        return Str::random($length);
+        $otp = '';
+
+        for ($i = 0; $i < $length; $i++) {
+            $otp .= mt_rand(0, 9); // Generate a random number between 0 and 9
+        }
+
+        return $otp;
     }
 
     // Function to send OTP via email
@@ -94,64 +95,32 @@ class UserController extends Controller
 
     public function verifyRegister(Request $request)
     {
-        $otp = $request->otp;
-        $userOtp = $this->getOtpFromCookie();
-        $userData = $this->getUserDataFromCookie();
-
-        if ($otp != $userOtp) {
+        $otpInput = $request->otpInput;
+        $otpEmail = $request->otpEmail;
+        
+        if ($otpInput != $otpEmail) {
             // OTP is incorrect
             return ApiResponse::error('Invalid OTP', 400);
         }
 
         // Store user data in database
         $user = User::create([
-            'email' => $userData['email'],
-            'password' => Hash::make($userData['password']),
-            'name' => $userData['name'],
-            'gender' => $userData['gender'],
-            'phone_number' => $userData['phone_number'],
-            'address' => $userData['address'],
-            'photo' => $userData['photo'],
+            'email' => $request['email'],
+            'password' => Hash::make($request['password']),
+            'name' => $request['name'],
+            'gender' => $request['gender'],
+            'phone_number' => $request['phone_number'],
+            'address' => $request['address'],
+            'photo' => $request['photo'],
             'role' => 2
         ]);
 
-        // Clear cookies
-        $this->clearCookies();
         return ApiResponse::success($user, 'User registered successfully', 201);
     }
 
-    private function storeUserDataInCookie($data)
+    public function getPhoto( $photoPath)
     {
-        $cookie = cookie(self::COOKIE_USER_DATA, json_encode($data), 60); // Expires in 60 minutes
-        return response()->withCookie($cookie);
-    }
-
-    private function getUserDataFromCookie()
-    {
-        return json_decode(request()->cookie(self::COOKIE_USER_DATA), true);
-    }
-
-    private function storeOtpInCookie($otp)
-    {
-        $cookie = cookie(self::COOKIE_USER_OTP, $otp, 5); // Expires in 5 minutes
-        return response()->withCookie($cookie);
-    }
-
-    private function getOtpFromCookie()
-    {
-        return request()->cookie(self::COOKIE_USER_OTP);
-    }
-
-    private function clearCookies()
-    {
-        return response()
-            ->withCookie(cookie()->forget(self::COOKIE_USER_DATA))
-            ->withCookie(cookie()->forget(self::COOKIE_USER_OTP));
-    }
-
-    public function getPhoto($photoPath)
-    {
-        if ($photoPath == "" || !isset($photoPath)) {
+        if($photoPath == "" || !isset($photoPath)){
             return "";
         }
         return "/storage/" . $photoPath;

@@ -11,23 +11,64 @@ use App\Models\Merchant;
 use App\Helpers\ApiResponse;
 use App\Helpers\PaginationHelper;
 use App\Mail\OtpRegisterMail;
+use App\Models\Order;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Mail;
 
 class MerchantController extends Controller
 {
+    public function orders(Request $request)
+    {
+        // Pagination
+        $perPage = $request->input('per_page', 10);
+
+        // Filters
+        $startDate = $request->input('start_date', null);
+        $endDate = $request->input('end_date', null);
+        $status = $request->input('status', null);
+        $user_id = auth()->user()->id;
+
+        $query = Order::query()->where('merchant_id', $user_id);
+
+        if (!empty($startDate) && !empty($endDate) || !is_null($startDate) && !is_null($endDate)) {
+            $query->whereDate('created_at', '>=', $startDate)
+                ->whereDate('created_at', '<=', $endDate);
+        }
+
+        if (!empty($status) || !is_null($status)) {
+            $query->where('status', $status);
+        }
+
+        $formattedOrders = $query->get()->map(function ($order) {
+            return [
+                'id' => $order->id,
+                'expiration_date' => $order->expiration_date->format('Y-m-d H:i:s'),
+                'status' => $order->status,
+                'order_date' => $order->created_at->format('Y-m-d H:i:s'),
+                'user' => $this->formarUser($order->user)
+            ];
+        });
+
+        $paginationOrders = PaginationHelper::paginateCollection($formattedOrders, $perPage);
+
+        $result = PaginationHelper::formatPagination($paginationOrders);
+
+        return ApiResponse::success($result, 'Order history retrieved successfully', 200);
+    }
+
     public function list(Request $request)
     {
         $query = User::with('merchant')->where('role', 3);
         $isSuspended = $this->formatIsSuspend($request->input('is_suspended'));
         $searchValue = $this->formatSearchValue($request->input('search'));
-        
-        if(!is_null($isSuspended)){
+
+        if (!is_null($isSuspended)) {
             $query->whereHas('merchant', function ($query) use ($isSuspended) {
                 $query->where('is_suspended', $isSuspended);
             });
         }
-        
-        if(!is_null($searchValue)){
+
+        if (!is_null($searchValue)) {
             $query->where('name', 'like', $searchValue)
                 ->orWhereHas('merchant', function ($query) use ($searchValue) {
                     $query->where('service_name', 'like', $searchValue);
@@ -41,7 +82,7 @@ class MerchantController extends Controller
         return ApiResponse::success($formattedPagination, 'Data Retrieved Successfully', 200);
     }
 
-    public function formatSearchValue($request) 
+    public function formatSearchValue($request)
     {
         if (!isset($request) || $request == "") {
             return null;
@@ -52,7 +93,7 @@ class MerchantController extends Controller
 
     public function formatIsSuspend($request)
     {
-        if(!isset($request)){
+        if (!isset($request)) {
             return null;
         }
 
@@ -66,7 +107,7 @@ class MerchantController extends Controller
     public function login(Request $request)
     {
         // Validasi input
-        $validator = Validator::make($request->all(),[
+        $validator = Validator::make($request->all(), [
             'email' => 'required|email',
             'password' => 'required',
         ]);
@@ -88,10 +129,25 @@ class MerchantController extends Controller
         }
     }
 
+    public function formarUser($user)
+    {
+        return [
+            "id" => $user->id,
+            "name" => $user->name,
+            "email" => $user->email,
+            "gender" => $user->gender,
+            "phone_number" => $user->phone_number,
+            "address" => $user->address,
+            "photo" => $user->photo,
+            "role" => $user->role,
+            "join_date" => $user->created_at->format('Y-m-d H:i:s')
+        ];
+    }
+
     public function register(Request $request)
     {
         // Validasi input
-        $validator = Validator::make($request->all(),[
+        $validator = Validator::make($request->all(), [
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:6',
             'name' => 'required',
@@ -114,62 +170,51 @@ class MerchantController extends Controller
             $photoPath = $photo->store('profile', 'public');
         }
         $data = $request->all();
-        $data['photo'] = $photoPath;
+        $data['photo'] = $this->getPhoto($photoPath);
 
         // Generate OTP
         $otp = $this->generateNumericString(6);
 
-         // Send OTP via email
+        // Send OTP via email
         $this->sendOtpEmail($request->email, $otp);
 
-         // Store user data and OTP in session
-        $request->session()->put('merchant_registration_data', $data);
-        $request->session()->put('merchant_otp', $otp);
-        // $request->session()->put('merchant_otp_expired', now()->addMinutes(5));
+        $result = [
+            'registered' => $data,
+            'otpEmail' => $otp
+        ];
 
-        
-        return ApiResponse::success([], 'Merchant registered successfully', 201);
+        return ApiResponse::success($result, 'Merchant registered successfully', 201);
     }
 
     public function verifyRegister(Request $request)
     {
-        $otp = $request->otp;
-        $merchantOtp = $request->session()->get('merchant_otp');
-        $merchantData = $request->session()->get('merchant_registration_data');
+        $otpInput = $request->otpInput;
+        $otpEmail = $request->otpEmail;
 
-        if ($otp != $merchantOtp){
+        if ($otpInput != $otpEmail) {
             // OTP is incorrect
             return ApiResponse::error('Invalid OTP', 400);
         }
 
-        // $otpExpiredTime = $request->session()->get('merchant_otp_expired');
-        // $currentDateTime = now();
-
-        // if ($currentDateTime > $otpExpiredTime) {
-        //     $this->forgetSession();
-        //     // OTP expired
-        //     return ApiResponse::error('OTP expired', 400);
-        // }
-
         // Store user data in database
         $user = User::create([
-            'email' => $merchantData->email,
-            'password' => Hash::make($merchantData->password),
-            'name' => $merchantData->name,
-            'gender' => $merchantData->gender,
-            'phone_number' => $merchantData->phone_number,
-            'address' => $merchantData->address,
-            'photo' => $merchantData->photo,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'name' => $request->name,
+            'gender' => $request->gender,
+            'phone_number' => $request->phone_number,
+            'address' => $request->address,
+            'photo' => $request->photo,
             'role' => 3
         ]);
 
         $merchant = Merchant::create([
             'user_id' => $user->id,
-            'description' => $merchantData->description,
-            'service_name' => $merchantData->service_name,
-            'price_per_hour' => $merchantData->price_per_hour
+            'description' => $request->description,
+            'service_name' => $request->service_name,
+            'price_per_hour' => $request->price_per_hour
         ]);
-        
+
         $result = [
             'id' => $user->id,
             'email' => $user->email,
@@ -184,15 +229,7 @@ class MerchantController extends Controller
             'price_per_hour' => $merchant->price_per_hour
         ];
 
-        // Clear session data
-        $this->forgetSession($request);
-        return ApiResponse::success($result, 'User registered successfully', 201);        
-    }
-
-    private function forgetSession($request)
-    {
-        $request->session()->forget('merchant_registration_data');
-        $request->session()->forget('merchant_otp');
+        return ApiResponse::success($result, 'User registered successfully', 201);
     }
 
     // Function to send OTP via email
@@ -201,9 +238,9 @@ class MerchantController extends Controller
         Mail::to($email)->send(new OtpRegisterMail($otp));
     }
 
-    public function getPhoto( $photoPath)
+    public function getPhoto($photoPath)
     {
-        if($photoPath == "" || !isset($photoPath)){
+        if ($photoPath == "" || !isset($photoPath)) {
             return "";
         }
         return "/storage/" . $photoPath;
@@ -218,33 +255,5 @@ class MerchantController extends Controller
         }
 
         return $otp;
-    }
-
-    public function acceptOrder(Request $request, $id)
-    {
-        $order = Order::find($id);
-
-        // Check if the order is available
-        if(is_null($order)) {
-            return ApiResponse::error('Order not found', 404);
-        }
-
-        // Check if the order is still pending
-        if ($order->status !== 0) {
-            return ApiResponse::error('Order has already been processed', 400);
-        }
-
-        // Check if the order has exceeded the time limit
-        $currentTime = now();
-        $expirationTime = Carbon::parse($order->order_time)->addMinutes(5);
-        if ($currentTime > $expirationTime) {
-            return ApiResponse::error('Order has expired', 400);
-        }
-
-        // Update order status to accepted
-        $order->status = 1; // Set status to accepted
-        $order->save();
-
-        return ApiResponse::success($order, 'Order successfully accepted', 200);
     }
 }
